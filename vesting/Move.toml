@@ -1,0 +1,6 @@
+[package]
+name = "vesting_service"
+edition = "2024.beta"
+
+[addresses]
+vesting_service = "0x0"
