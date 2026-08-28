@@ -21,7 +21,7 @@ cheap to fix while the package is still upgradeable.
 
 | # | Severity | Issue | Status |
 |---|---|---|---|
-| 1 | High (operational) | `UpgradeCap` not burned: package is still upgradeable | open |
+| 1 | High (operational) | `UpgradeCap` not burned: package is still upgradeable | closed, cap burned |
 | 2 | Medium | No `beneficiary != @0x0` check: permanent, silent loss | fixed, live in v2 |
 | 3 | Medium (product) | Proof-of-lock is only as good as type verification in UI/indexer | fixed in the UI |
 | 4 | Low | Claimed locks are never destroyed: storage rebate lost forever |
@@ -41,9 +41,13 @@ could add a function that borrows the item out of an existing lock. Note this is
 true even for locks created today, because `ObjectLock` objects are typed by the
 package's origin ID and would remain callable by the upgraded package.
 
-**Action:** after the UI lock test, run
-`sui client call --package 0x2 --module package --function make_immutable --args <UPGRADE_CAP>`
-and put the tx hash in the docs. Do the fixes below first, in the same window.
+**Resolved (29 Aug 2026).** After the v2 upgrade and the on-chain checks, the
+UpgradeCap was destroyed with `0x2::package::make_immutable`, tx
+`3bFTDJwWpyPDKzKPRLhMQs65AXbwpHZJtRwpLrcw34tZ`. Package
+`0x0267556b54173e71b4eefce7c2466770fa52842d0b4242dae49f023022636e89` can never be
+upgraded again: the "no admin, no backdoor" claim is now enforced by the chain and
+not by our good intentions. The trade-off is that any future finding in this
+package cannot be patched, only disclosed and worked around off-chain.
 
 ## 2. Medium: no zero-address (or self-sanity) check on `beneficiary`
 

@@ -48,6 +48,10 @@ Time-lock ANY `key + store` object (LP positions, NFTs) until a date.
 | v1 (origin) | `0xe0f23402fae139961a3d5ffa99d054a7821b82295eb5988957053f0c9a4dd14d` | defines the types and events, never changes |
 | v2 (current) | `0x0267556b54173e71b4eefce7c2466770fa52842d0b4242dae49f023022636e89` | rejects a `@0x0` beneficiary |
 
+The UpgradeCap was destroyed on 29 Aug 2026
+(tx `3bFTDJwWpyPDKzKPRLhMQs65AXbwpHZJtRwpLrcw34tZ`): this package is immutable and
+can never be upgraded, by us or by anyone.
+
 Our own review of this package is in [object-lock/AUDIT.md](./object-lock/AUDIT.md),
 including the issues we found and fixed. Findings we listed as open are fair game
 for the bounty, as is anything we missed.
