@@ -55,10 +55,10 @@ module walrus_names::walrus_names {
     const FEE_BASE:     u64 = 500_000_000;    // 0.5 SUI default
     const MAX_FEE_BASE: u64 = 10_000_000_000; // 10 SUI hard cap
     const MIN_LEN:      u64 = 3;
-    /// Lunghezza minima per cui una registrazione whitelisted/comp waiva la fee.
-    /// I nomi premium sotto questa soglia (es. 3-char) pagano SEMPRE la fee, anche
-    /// se il wallet è whitelistato — così una comp partner non può regalare un nome
-    /// premium. La comp resta intatta per un nome ≥ COMP_MIN_LEN.
+    /// Minimum length for which a whitelisted/comped registration waives the fee.
+    /// Premium names below this threshold (e.g. 3-char) ALWAYS pay the fee, even
+    /// if the wallet is whitelisted, so a partner comp can never give away a
+    /// premium name. The comp stays intact for a name >= COMP_MIN_LEN.
     const COMP_MIN_LEN: u64 = 4;
     const MAX_LEN:      u64 = 63;
     const MAX_BLOB_LEN: u64 = 256;
@@ -69,12 +69,12 @@ module walrus_names::walrus_names {
     const EPT_TYPE_KEY: vector<u8> = b"ept_type";     // TypeName of the accepted coin
     const EPT_FEE_KEY:  vector<u8> = b"ept_fee_base"; // u64 EPT-denominated fee base
     const EPT_BAL_KEY:  vector<u8> = b"ept_balance";  // Balance<T> of collected EPT fees
-    /// Version corrente del package. Si incrementa solo agli upgrade *che
-    /// richiedono migrate()* per portare gli oggetti condivisi alla nuova
-    /// versione, disattivando le funzioni delle versioni precedenti (assert_version).
-    /// L'upgrade additivo che ha aggiunto record_partner_launch / treasury_balance
-    /// NON cambia VERSION: è retro-compatibile, gira senza migrate, e il package
-    /// precedente resta valido (nessuna fix di sicurezza che imponga di disattivarlo).
+    /// Current package version. Only incremented on upgrades *that require
+    /// migrate()* to move the shared objects to the new version, deactivating
+    /// the entry points of previous versions (assert_version).
+    /// The additive upgrade that added record_partner_launch / treasury_balance
+    /// does NOT change VERSION: it is backward-compatible, runs without migrate,
+    /// and the previous package stays valid (no security fix forces disabling it).
     const VERSION:      u64 = 1;
 
     // =========================================================================
@@ -182,9 +182,9 @@ module walrus_names::walrus_names {
     // Version-gating
     // =========================================================================
 
-    /// Abortisce se l'oggetto è stato migrato a una versione più recente di quella
-    /// con cui questo package è stato compilato. Usato per disattivare le funzioni
-    /// dei package vecchi dopo un upgrade + migrate().
+    /// Aborts if the object has been migrated to a version newer than the one
+    /// this package was compiled with. Used to deactivate the entry points of
+    /// old packages after an upgrade + migrate().
     public fun assert_treasury_version(treasury: &WalNamesTreasury) {
         assert!(treasury.version == VERSION, EWrongVersion);
     }
@@ -192,9 +192,9 @@ module walrus_names::walrus_names {
         assert!(registry.version == VERSION, EWrongVersion);
     }
 
-    /// Da chiamare UNA volta dopo ogni upgrade: porta gli oggetti condivisi alla
-    /// VERSION corrente, disattivando le funzioni delle versioni precedenti.
-    /// Solo AdminCap. Non può abbassare la versione.
+    /// Call ONCE after each upgrade: moves the shared objects to the current
+    /// VERSION, deactivating the entry points of previous versions.
+    /// AdminCap only. Cannot lower the version.
     public fun migrate(
         _cap:     &AdminCap,
         treasury: &mut WalNamesTreasury,
@@ -244,15 +244,16 @@ module walrus_names::walrus_names {
         validate_chars(bytes);
 
         let sender = ctx.sender();
-        // La comp waiva la fee SOLO per nomi ≥ COMP_MIN_LEN. Un nome premium più corto
-        // (es. 3-char) NON attiva la comp: cade nel ramo a pagamento anche se il wallet
-        // è whitelistato, e la whitelist NON viene consumata (resta per un nome ≥4).
+        // The comp waives the fee ONLY for names >= COMP_MIN_LEN. A shorter premium
+        // name (e.g. 3-char) does NOT trigger the comp: it falls into the paid branch
+        // even if the wallet is whitelisted, and the whitelist entry is NOT consumed
+        // (it stays available for a name >= 4 chars).
         let comp = table::contains(&treasury.whitelist, sender) && name_len >= COMP_MIN_LEN;
 
         if (comp) {
-            // One-shot whitelist: consuma SUBITO l'entry così non può essere
-            // riusata per registrare più nomi gratis nella stessa PTB.
-            // Il prossimo register in tx troverà comp = false → paga la fee.
+            // One-shot whitelist: consume the entry IMMEDIATELY so it cannot be
+            // reused to register multiple free names within the same PTB.
+            // The next register in the tx will see comp = false and pay the fee.
             table::remove(&mut treasury.whitelist, sender);
             event::emit(WhitelistRemoved { wallet: sender });
             // Whitelist: no fee, return full payment to sender

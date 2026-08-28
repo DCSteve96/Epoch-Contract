@@ -34,8 +34,8 @@ module walrus_names::royalty_rule {
 
     public struct Rule has drop {}
 
-    /// R-1 fix: hard cap sulla royalty applicato QUI (non solo nel wrapper
-    /// marketplace::update_policy_fee), così non è aggirabile chiamando
+    /// R-1 fix: hard cap on the royalty enforced HERE (not only in the
+    /// marketplace::update_policy_fee wrapper), so it cannot be bypassed by calling
     /// add/update_fee direttamente col TransferPolicyCap.
     const MAX_FEE_BPS: u64 = 1_000; // 10%
     const EFeeTooHigh: u64 = 0;     // fee_bps > MAX_FEE_BPS

@@ -18,13 +18,13 @@ module vesting_service::vesting_tests {
     const BENEFICIARY3: address = @0xBE3;
     const STRANGER:     address = @0x57;
 
-    // 0.1 SUI (deve corrispondere alla fee impostata in init_for_testing)
+    // 0.1 SUI (must match the fee set in init_for_testing)
     const FEE:    u64 = 100_000_000;
     // 1 SUI da bloccare nel vault
     const AMOUNT: u64 = 1_000_000_000;
 
     // =========================================================================
-    // Helper: inizializza il contratto e imposta fee a 0.1 SUI
+    // Helper: initialize the contract and set the fee to 0.1 SUI
     // =========================================================================
 
     fun setup(scenario: &mut sui::test_scenario::Scenario) {
@@ -83,7 +83,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 1. Pure cliff — claim totale dopo il cliff
+    // 1. Pure cliff: full claim after the cliff
     // =========================================================================
 
     #[test]
@@ -104,7 +104,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(vault);
         };
 
-        // Dopo il cliff: tutto claimabile
+        // After the cliff: everything is claimable
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let mut vault = ts::take_shared<VestingVault<SUI>>(&scenario);
@@ -123,7 +123,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 2. Double claim — la seconda deve fallire con ENothingToClaim
+    // 2. Double claim: the second one must fail with ENothingToClaim
     // =========================================================================
 
     #[test]
@@ -156,7 +156,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 3. Linear vesting — claim a metà durata
+    // 3. Linear vesting: claim at half duration
     // =========================================================================
 
     #[test]
@@ -198,7 +198,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 4. Linear vesting — claim unico dopo la fine
+    // 4. Linear vesting: single claim after the end
     // =========================================================================
 
     #[test]
@@ -226,7 +226,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 5. Hybrid vesting — 20% al cliff + 80% lineare
+    // 5. Hybrid vesting: 20% at the cliff + 80% linear
     // =========================================================================
 
     #[test]
@@ -251,7 +251,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(vault);
         };
 
-        // A metà del lineare (t=3000): ulteriore 40%
+        // Halfway through the linear part (t=3000): another 40%
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let mut vault = ts::take_shared<VestingVault<SUI>>(&scenario);
@@ -265,7 +265,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(vault);
         };
 
-        // Dopo la fine (t=6000): restante 40%
+        // After the end (t=6000): remaining 40%
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let mut vault = ts::take_shared<VestingVault<SUI>>(&scenario);
@@ -284,7 +284,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 6. Fee insufficiente — deve abortire
+    // 6. Insufficient fee: must abort
     // =========================================================================
 
     #[test]
@@ -313,7 +313,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 7. Indirizzo sbagliato tenta il claim — deve abortire
+    // 7. Wrong address attempts the claim: must abort
     // =========================================================================
 
     #[test]
@@ -337,7 +337,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 8. cliff_bps > 0 con cliff_ts_ms = 0 — deve abortire (Finding #2)
+    // 8. cliff_bps > 0 with cliff_ts_ms = 0: must abort (Finding #2)
     // =========================================================================
 
     #[test]
@@ -353,7 +353,7 @@ module vesting_service::vesting_tests {
             let tokens = coin::mint_for_testing<SUI>(AMOUNT, ts::ctx(&mut scenario));
             let clk    = make_clock(0, &mut scenario);
 
-            // cliff_bps=5000 ma cliff_ts_ms=0: deve abortire con EInvalidParams
+            // cliff_bps=5000 but cliff_ts_ms=0: must abort with EInvalidParams
             vesting::create_vault<SUI>(
                 &mut treasury, fee, tokens, BENEFICIARY,
                 0,     // cliff_ts_ms = 0
@@ -369,7 +369,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 9. Beneficiario zero-address — deve abortire (Finding #8)
+    // 9. Zero-address beneficiary: must abort (Finding #8)
     // =========================================================================
 
     #[test]
@@ -387,7 +387,7 @@ module vesting_service::vesting_tests {
 
             vesting::create_vault<SUI>(
                 &mut treasury, fee, tokens,
-                @0x0,  // zero address — deve abortire
+                @0x0,  // zero address: must abort
                 0, 0, 0, 10000, &clk, ts::ctx(&mut scenario),
             );
 
@@ -399,7 +399,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 10. Multi-vault — claim proporzionale per due beneficiari
+    // 10. Multi-vault: proportional claim for two beneficiaries
     // =========================================================================
 
     #[test]
@@ -430,7 +430,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(treasury);
         };
 
-        // A metà (t=5000): B1 clama 30% (50% di 60%), B2 clama 20% (50% di 40%)
+        // Halfway (t=5000): B1 claims 30% (50% of 60%), B2 claims 20% (50% of 40%)
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let mut vault = ts::take_shared<MultiVestingVault<SUI>>(&scenario);
@@ -457,7 +457,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(vault);
         };
 
-        // Dopo la fine (t=10000): entrambi claimano il restante
+        // After the end (t=10000): both claim the remainder
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let mut vault = ts::take_shared<MultiVestingVault<SUI>>(&scenario);
@@ -473,7 +473,7 @@ module vesting_service::vesting_tests {
             let clk       = make_clock(10000, &mut scenario);
             vesting::claim_multi<SUI>(&mut vault, &clk, ts::ctx(&mut scenario));
 
-            // Vault deve essere vuoto (o con dust trascurabile di rounding)
+            // Vault must be empty (or hold negligible rounding dust)
             assert!(vesting::multi_remaining_balance(&vault) == 0, 2);
 
             clock::destroy_for_testing(clk);
@@ -484,7 +484,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 11. Multi-vault — non-beneficiario non può claimare
+    // 11. Multi-vault: a non-beneficiary cannot claim
     // =========================================================================
 
     #[test]
@@ -524,7 +524,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 12. Multi-vault — shares che non sommano 10000 devono abortire
+    // 12. Multi-vault: shares that do not sum to 10000 must abort
     // =========================================================================
 
     #[test]
@@ -540,7 +540,7 @@ module vesting_service::vesting_tests {
             let tokens = coin::mint_for_testing<SUI>(AMOUNT, ts::ctx(&mut scenario));
             let clk    = make_clock(0, &mut scenario);
 
-            // 60% + 30% = 90%, non 100% — deve abortire
+            // 60% + 30% = 90%, not 100%: must abort
             vesting::create_multi_vault<SUI>(
                 &mut treasury, fee, tokens,
                 vector[BENEFICIARY, BENEFICIARY2],
@@ -556,7 +556,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 13. Multi-vault — bps=0 per un beneficiario deve abortire (Finding #6)
+    // 13. Multi-vault: bps=0 for a beneficiary must abort (Finding #6)
     // =========================================================================
 
     #[test]
@@ -572,7 +572,7 @@ module vesting_service::vesting_tests {
             let tokens = coin::mint_for_testing<SUI>(AMOUNT, ts::ctx(&mut scenario));
             let clk    = make_clock(0, &mut scenario);
 
-            // bps=0 per B2 — deve abortire con EInvalidParams
+            // bps=0 for B2: must abort with EInvalidParams
             vesting::create_multi_vault<SUI>(
                 &mut treasury, fee, tokens,
                 vector[BENEFICIARY, BENEFICIARY2],
@@ -588,7 +588,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 14. Admin — aggiornamento fee e withdraw
+    // 14. Admin: fee update and withdraw
     // =========================================================================
 
     #[test]
@@ -596,10 +596,10 @@ module vesting_service::vesting_tests {
         let mut scenario = ts::begin(ADMIN);
         setup(&mut scenario);
 
-        // Crea un vault per generare fee nel treasury
+        // Create a vault to generate fees in the treasury
         create_test_vault(&mut scenario, CREATOR, BENEFICIARY, 0, 0, 0, 10000, 0);
 
-        // Fee deve essere 0.1 SUI nel treasury
+        // Treasury must hold the 0.1 SUI fee
         ts::next_tx(&mut scenario, ADMIN);
         {
             let treasury = ts::take_shared<Treasury>(&scenario);
@@ -607,7 +607,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(treasury);
         };
 
-        // Admin preleva le fee
+        // Admin withdraws the fees
         ts::next_tx(&mut scenario, ADMIN);
         {
             let admin_cap    = ts::take_from_sender<vesting::AdminCap>(&scenario);
@@ -617,7 +617,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(treasury);
         };
 
-        // Admin riceve la coin con il valore della fee
+        // Admin receives the coin holding the fee value
         ts::next_tx(&mut scenario, ADMIN);
         {
             let payout = ts::take_from_sender<Coin<SUI>>(&scenario);
@@ -629,7 +629,7 @@ module vesting_service::vesting_tests {
     }
 
     // =========================================================================
-    // 15. Multi-vault — cliff + linear con 3 beneficiari
+    // 15. Multi-vault: cliff + linear with 3 beneficiaries
     // =========================================================================
 
     #[test]
@@ -637,7 +637,7 @@ module vesting_service::vesting_tests {
         let mut scenario = ts::begin(ADMIN);
         setup(&mut scenario);
 
-        // 3 beneficiari: 50% / 30% / 20%, 25% al cliff (t=1000), poi lineare → t=5000
+        // 3 beneficiaries: 50% / 30% / 20%, 25% at the cliff (t=1000), then linear until t=5000
         ts::next_tx(&mut scenario, CREATOR);
         {
             let mut treasury = ts::take_shared<Treasury>(&scenario);
@@ -660,7 +660,7 @@ module vesting_service::vesting_tests {
             ts::return_shared(treasury);
         };
 
-        // Al cliff (t=1000): ogni beneficiario può claimare il 25% della sua quota
+        // At the cliff (t=1000): each beneficiary can claim 25% of their share
         ts::next_tx(&mut scenario, BENEFICIARY);
         {
             let vault = ts::take_shared<MultiVestingVault<SUI>>(&scenario);

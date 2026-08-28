@@ -318,8 +318,8 @@ module walrus_names::marketplace {
         let Offer { id, name, name_cap_id, bidder, mut payment, expiry } = offer;
         object::delete(id);
 
-        // OF-1: un'offerta scaduta non è più accettabile (il bidder può solo
-        // reclaimarla). expiry == 0 = nessuna scadenza.
+        // OF-1: an expired offer can no longer be accepted (the bidder can only
+        // reclaim it). expiry == 0 = no expiry.
         assert!(expiry == 0 || clock::timestamp_ms(clock) < expiry, EOfferExpired);
 
         let seller = ctx.sender();

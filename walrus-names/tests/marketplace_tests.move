@@ -77,9 +77,9 @@ module walrus_names::marketplace_tests {
     }
 
     // =====================================================================
-    // R-1: la royalty non può superare il 10% — cap APPLICATO DENTRO
-    // royalty_rule, quindi non aggirabile chiamando update_fee direttamente
-    // col TransferPolicyCap (bypassando marketplace::update_policy_fee).
+    // R-1: the royalty cannot exceed 10%. The cap is ENFORCED INSIDE
+    // royalty_rule, so it cannot be bypassed by calling update_fee directly
+    // with the TransferPolicyCap (going around marketplace::update_policy_fee).
     // =====================================================================
 
     #[test]
@@ -446,8 +446,8 @@ module walrus_names::marketplace_tests {
         ts::end(sc);
     }
 
-    // BID: B-1 — non si può offrire su un nome NON registrato (ENameNotRegistered = 107).
-    // (Con l'hardening B-1 questo è bloccato già in place_offer, prima di accept_offer.)
+    // BID: B-1: an offer cannot be placed on an UNREGISTERED name (ENameNotRegistered = 107).
+    // (With the B-1 hardening this is already blocked in place_offer, before accept_offer.)
     #[test]
     #[expected_failure(abort_code = 107, location = marketplace)]
     fun offer_on_unregistered_name_aborts() {
