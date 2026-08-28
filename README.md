@@ -40,10 +40,17 @@ Time-lock ANY `key + store` object (LP positions, NFTs) until a date.
 - Cliff-only, zero admin, zero fees
 - Shared locks: public proof-of-lock, verifiable by anyone
 - Unlock date can only be extended, never shortened
+- No function ever hands out `&mut T`, so liquidity cannot be pulled out of a
+  locked LP position
 
-| Network | Package |
-|---|---|
-| Mainnet | `0xe0f23402fae139961a3d5ffa99d054a7821b82295eb5988957053f0c9a4dd14d` |
+| Version | Mainnet package | Notes |
+|---|---|---|
+| v1 (origin) | `0xe0f23402fae139961a3d5ffa99d054a7821b82295eb5988957053f0c9a4dd14d` | defines the types and events, never changes |
+| v2 (current) | `0x0267556b54173e71b4eefce7c2466770fa52842d0b4242dae49f023022636e89` | rejects a `@0x0` beneficiary |
+
+Our own review of this package is in [object-lock/AUDIT.md](./object-lock/AUDIT.md),
+including the issues we found and fixed. Findings we listed as open are fair game
+for the bounty, as is anything we missed.
 
 ## Running the tests
 
@@ -52,7 +59,7 @@ Each package ships its Move unit tests:
 ```bash
 cd vesting      && sui move test   # vesting suite
 cd walrus-names && sui move test   # 32 tests: names, marketplace, EPT, comp gate
-cd object-lock  && sui move test   # 7 tests: lock, claim, extend, aborts
+cd object-lock  && sui move test   # 11 tests: lock, claim, extend, aborts
 ```
 
 ## Bug bounty

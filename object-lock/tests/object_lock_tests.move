@@ -157,6 +157,102 @@ module epoch_object_lock::object_lock_tests {
         ts::end(sc);
     }
 
+    // Only the beneficiary can extend (ENotBeneficiary = 1).
+    #[test]
+    #[expected_failure(abort_code = 1, location = epoch_object_lock::object_lock)]
+    fun extend_by_non_beneficiary_aborts() {
+        let mut sc = ts::begin(ALICE);
+        let mut clk = clock::create_for_testing(ts::ctx(&mut sc));
+        clock::set_for_testing(&mut clk, 1_000);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let nft = mint_nft(&mut sc);
+            object_lock::lock(nft, 5_000, BOB, &clk, ts::ctx(&mut sc));
+        };
+        ts::next_tx(&mut sc, ALICE); // creator tries to extend BOB's lock
+        {
+            let mut lock = ts::take_shared<ObjectLock<DummyNft>>(&sc);
+            object_lock::extend(&mut lock, 9_000, ts::ctx(&mut sc));
+            ts::return_shared(lock);
+        };
+        clock::destroy_for_testing(clk);
+        ts::end(sc);
+    }
+
+    // Extending an already claimed lock aborts (EAlreadyClaimed = 3).
+    #[test]
+    #[expected_failure(abort_code = 3, location = epoch_object_lock::object_lock)]
+    fun extend_after_claim_aborts() {
+        let mut sc = ts::begin(ALICE);
+        let mut clk = clock::create_for_testing(ts::ctx(&mut sc));
+        clock::set_for_testing(&mut clk, 1_000);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let nft = mint_nft(&mut sc);
+            object_lock::lock(nft, 5_000, BOB, &clk, ts::ctx(&mut sc));
+        };
+        clock::set_for_testing(&mut clk, 6_000);
+        ts::next_tx(&mut sc, BOB);
+        {
+            let mut lock = ts::take_shared<ObjectLock<DummyNft>>(&sc);
+            object_lock::claim(&mut lock, &clk, ts::ctx(&mut sc));
+            object_lock::extend(&mut lock, 9_000, ts::ctx(&mut sc)); // nothing left to lock
+            ts::return_shared(lock);
+        };
+        clock::destroy_for_testing(clk);
+        ts::end(sc);
+    }
+
+    // A @0x0 beneficiary aborts (EZeroBeneficiary = 5): the item would be lost forever.
+    #[test]
+    #[expected_failure(abort_code = 5, location = epoch_object_lock::object_lock)]
+    fun lock_with_zero_beneficiary_aborts() {
+        let mut sc = ts::begin(ALICE);
+        let mut clk = clock::create_for_testing(ts::ctx(&mut sc));
+        clock::set_for_testing(&mut clk, 1_000);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let nft = mint_nft(&mut sc);
+            object_lock::lock(nft, 5_000, @0x0, &clk, ts::ctx(&mut sc));
+        };
+        clock::destroy_for_testing(clk);
+        ts::end(sc);
+    }
+
+    // lock_self: creator and beneficiary are the same address.
+    #[test]
+    fun lock_self_and_claim() {
+        let mut sc = ts::begin(ALICE);
+        let mut clk = clock::create_for_testing(ts::ctx(&mut sc));
+        clock::set_for_testing(&mut clk, 1_000);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let nft = mint_nft(&mut sc);
+            object_lock::lock_self(nft, 5_000, &clk, ts::ctx(&mut sc));
+        };
+        clock::set_for_testing(&mut clk, 6_000);
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut lock = ts::take_shared<ObjectLock<DummyNft>>(&sc);
+            assert!(object_lock::beneficiary(&lock) == ALICE, 0);
+            assert!(object_lock::creator(&lock) == ALICE, 1);
+            assert!(object_lock::locked_at_ms(&lock) == 1_000, 2);
+            object_lock::claim(&mut lock, &clk, ts::ctx(&mut sc));
+            ts::return_shared(lock);
+        };
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let nft = ts::take_from_sender<DummyNft>(&sc);
+            ts::return_to_sender(&sc, nft);
+        };
+        clock::destroy_for_testing(clk);
+        ts::end(sc);
+    }
+
     // Double-claim aborts (EAlreadyClaimed = 3).
     #[test]
     #[expected_failure(abort_code = 3, location = epoch_object_lock::object_lock)]

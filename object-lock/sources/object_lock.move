@@ -25,11 +25,12 @@ module epoch_object_lock::object_lock {
     // Errors
     // =========================================================================
 
-    const EStillLocked:     u64 = 0;
-    const ENotBeneficiary:  u64 = 1;
-    const EUnlockInPast:    u64 = 2;
-    const EAlreadyClaimed:  u64 = 3;
-    const ENotExtension:    u64 = 4; // new unlock must be strictly later
+    const EStillLocked:      u64 = 0;
+    const ENotBeneficiary:   u64 = 1;
+    const EUnlockInPast:     u64 = 2;
+    const EAlreadyClaimed:   u64 = 3;
+    const ENotExtension:     u64 = 4; // new unlock must be strictly later
+    const EZeroBeneficiary:  u64 = 5; // @0x0 would make the item unclaimable forever
 
     // =========================================================================
     // Structs
@@ -74,6 +75,7 @@ module epoch_object_lock::object_lock {
 
     /// Lock `item` until `unlock_ms` (epoch milliseconds) for `beneficiary`.
     /// The lock is shared and immutable: no cancel, no early release.
+    /// `beneficiary` must not be @0x0 (that lock could never be claimed).
     public fun lock<T: key + store>(
         item:        T,
         unlock_ms:   u64,
@@ -82,6 +84,9 @@ module epoch_object_lock::object_lock {
         ctx:         &mut TxContext,
     ) {
         assert!(unlock_ms > clock.timestamp_ms(), EUnlockInPast);
+        // A @0x0 beneficiary could never sign a claim: the item would be lost
+        // forever with no warning (typo / truncated address). Reject it.
+        assert!(beneficiary != @0x0, EZeroBeneficiary);
         let item_id = object::id(&item);
         let lock = ObjectLock<T> {
             id:           object::new(ctx),
