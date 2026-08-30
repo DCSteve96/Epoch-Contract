@@ -56,6 +56,21 @@ Our own review of this package is in [object-lock/AUDIT.md](./object-lock/AUDIT.
 including the issues we found and fixed. Findings we listed as open are fair game
 for the bounty, as is anything we missed.
 
+### 4. `ept-gateway/` — Epoch EPT Gateway
+Pay the vesting deploy fee in $EPT instead of SUI, at a discount.
+- The EPT is burned by the contract, in the same call, not by us afterwards
+- Not an upgrade of `vesting`: it calls the existing public entry points, so the
+  vaults it creates are identical to directly created ones
+- Holds no user tokens: only a SUI float used to advance the protocol fee
+
+| Network | Package | Gateway (shared) |
+|---|---|---|
+| Mainnet | `0xfe47be69142372eacab34f66b936989079840501a0d85209ac68c8ba6f74eea5` | `0x75da1b355776cb2bbb7a5eed89710a63dffb5ff43a1f440bb058c4d31c2fbab3` |
+| Testnet | `0xd356dd8d1e409af5d26389bf07507fc0218c01ef83161d1dc17f50cbadb9ad94` | `0xe1c3a2cadea7a0ad9656c0ae7fffeb909c67a09fa25745268ee4e9073cdfd14a` |
+
+Our review, including the two guards it made us add, is in
+[ept-gateway/AUDIT.md](./ept-gateway/AUDIT.md).
+
 ## Running the tests
 
 Each package ships its Move unit tests:
@@ -64,6 +79,7 @@ Each package ships its Move unit tests:
 cd vesting      && sui move test   # vesting suite
 cd walrus-names && sui move test   # 32 tests: names, marketplace, EPT, comp gate
 cd object-lock  && sui move test   # 11 tests: lock, claim, extend, aborts
+cd ept-gateway  && sui move test   # 13 tests: burn, float, cap, pause (needs ../vesting)
 ```
 
 ## Bug bounty

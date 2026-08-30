@@ -1,0 +1,9 @@
+[package]
+name = "epoch_ept_gateway"
+edition = "2024.beta"
+
+[dependencies]
+vesting_service = { local = "../vesting" }
+
+[addresses]
+epoch_ept_gateway = "0x0"
