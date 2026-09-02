@@ -1,0 +1,36 @@
+[package]
+name = "epoch_lp_lock"
+edition = "2024.beta"
+
+# Sui e MoveStdlib NON vanno dichiarati: nel toolchain corrente sono dipendenze
+# di sistema, aggiunte automaticamente. Dichiararle esplicitamente disattiva
+# l'aggiunta automatica per questo package ma non per le sue dipendenze, ed è
+# esattamente così che il grafo finiva con due versioni di 0x1 e di 0x2.
+[dependencies]
+
+# Interfaccia Cetus, copia locale in `deps/cetus_clmm` invece che dipendenza git.
+#
+# Il manifest upstream dichiara le sue dipendenze via Move Registry (`r.mvr`), e
+# per risolverle serve il binario `mvr` installato sulla macchina di chi compila.
+# Un package che vende verificabilità non può chiedere a un auditor di installare
+# un tool esterno per riprodurre il bytecode, quindi l'interfaccia è vendorizzata
+# con le stesse due dipendenze dichiarate come git pinnati.
+#
+# I sorgenti sono identici all'upstream (commit adb48d144ac6a6…), solo firme con
+# corpi che fanno `abort 0`. La logica vera vive nel package Cetus on-chain.
+cetusclmm = { local = "./deps/cetus_clmm" }
+
+# Dichiarata anche qui, con lo stesso pin usato dentro deps/cetus_clmm: il modulo
+# usa `integer_mate::i32::I32` direttamente per i tick, e una dipendenza usata
+# direttamente va dichiarata direttamente.
+IntegerMate = { local = "./deps/integer_mate" }
+
+[addresses]
+epoch_lp_lock = "0x0"
+
+# L'indirizzo di Cetus non si dichiara qui: lo porta la dipendenza stessa, in
+# deps/cetus_clmm/Move.toml, insieme al suo published-at. Riassegnarlo qui
+# sarebbe un doppio assegnamento.
+#
+# ATTENZIONE: quei valori sono di mainnet. Su testnet Cetus vive a un indirizzo
+# diverso, quindi per l'integrazione su testnet vanno cambiati là dentro.

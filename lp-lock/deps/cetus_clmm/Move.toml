@@ -1,0 +1,28 @@
+# Copia locale dell'interfaccia Cetus CLMM, presa da
+# https://github.com/CetusProtocol/cetus-clmm-interface
+# commit adb48d144ac6a62baee48250f6d2a295207cf049 (sui/cetus_clmm), 1 set 2026.
+#
+# Perché è vendorizzata invece di essere una dipendenza git: il manifest
+# originale dichiara move_stl e integer_mate via Move Registry (`r.mvr`), e
+# risolverli richiede il binario `mvr` installato sulla macchina di chi compila.
+# Un package il cui prodotto è la verificabilità non può richiedere a un auditor
+# di installare un tool esterno per riprodurre il bytecode. Qui le stesse due
+# dipendenze sono dichiarate come git pinnati: identico contenuto, zero tool.
+#
+# I sorgenti NON sono modificati: sono solo firme, i corpi fanno `abort 0`.
+# Confrontabili con l'upstream con un diff.
+#
+# Manifest in stile classico (published-at e [addresses] qui dentro, niente
+# Published.toml) perché deve essere consumato da un package classico: il
+# toolchain rifiuta un vecchio stile che dipende da un nuovo stile.
+[package]
+name = "cetusclmm"
+version = "1.2.0"
+published-at = "0x25ebb9a7c50eb17b3fa9c5a30fb8b5ad8f97caaf4928943acbcff7153dfee5e3"
+
+[dependencies]
+IntegerMate = { local = "../integer_mate" }
+MoveSTL     = { local = "../move_stl" }
+
+[addresses]
+cetusclmm = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb"

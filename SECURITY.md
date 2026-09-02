@@ -10,6 +10,9 @@ Rewards are paid in **$EPT** per accepted finding.
 - `vesting/` — vault creation, claim math, multi-beneficiary shares, fee handling
 - `walrus-names/` — registry integrity, whitelist/comp logic, fee and EPT payment
   paths, marketplace escrow, offers, royalty enforcement, partner launch routing
+- `lp-lock/` — anything that moves liquidity out of a locked Cetus position before
+  its date, in any PTB composition; fees or rewards reaching anyone other than the
+  beneficiary; the spend cap on `add_liquidity`; the guards on claim and extend
 - `object-lock/` — lock/claim/extend invariants, beneficiary checks
 - `ept-gateway/` — fee burn correctness, float accounting, coin-type check,
   anything that gets a vault created without the fee being paid and burned
@@ -74,10 +77,11 @@ and is stated the same way in the docs on epochsui.com.
 | `vesting` | live, `0xe8d105c0f1d8b2508cd0404c2094f29ae46b0dd3929390f102ddae8278764bc3`, policy 0 (compatible), held by the deployer | the deployer can publish a new version of the package; existing vaults keep their layout and would be callable by it |
 | `walrus-names` | live, `0x4f6b58209dabcbb6fda96367727edff2dc396a88ce4afbaf7f81957b4b68f263`, policy 0 (compatible), held by the deployer | same; in practice we have only ever shipped additive upgrades (v2, v3, v4) |
 | `ept-gateway` | live, `0xf379a9563a118edf90f9faa1786553c4c597b55aa42770fd6663592eceb17358`, policy 0 (compatible), held by the deployer | deliberate while the fee level settles; this package holds no user tokens, only its SUI float |
+| `lp-lock` | live, `0x5449cdcca3d10fcf3189c4e3abf0856a942deb058cd0fbaaff79c38ebe3e6e23`, policy 0 (compatible), held by the deployer | the package is days old; the cap is burned after the external audit, with the digest published. New DEXes ship as separate packages, never as upgrades of this one, so an existing lock is never touched by new code |
 
 Immutability of a *vault* (no cancel, no admin override, no way for us to redirect
 tokens) is a property of the code as deployed. It is not the same as immutability
-of the *package*. For vesting and walrus-names, the trust assumption that the
+of the *package*. For vesting, walrus-names and lp-lock, the trust assumption that the
 deployer will not publish malicious bytecode is real and is not covered by the
 on-chain guarantees. We do not consider that assumption a vulnerability for this
 bounty, because it is disclosed rather than hidden, but we will not pretend it is
