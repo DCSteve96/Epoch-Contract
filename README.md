@@ -48,11 +48,10 @@ Time-lock a Cetus CLMM position without giving up the income it produces.
 - `&mut Position` exists in exactly one function, `add_liquidity`, where it is
   consumed by the next statement and the Cetus receipt is settled in the same body
 
-It exists because of a limitation of the package below it. Under `object-lock` a
-locked position is wrapped, so nothing can call `collect_fee` on it: locking means
-forfeiting the income, and that is the real reason teams do not lock their
-liquidity. This package separates the two, so the capital is frozen and the income
-is not.
+It exists because a plainly wrapped position cannot be called at all, so nothing
+can `collect_fee` on it: locking would mean forfeiting the income, and that is the
+real reason teams do not lock their liquidity. This package separates the two, so
+the capital is frozen and the income is not.
 
 | Version | Mainnet package | Notes |
 |---|---|---|
@@ -82,33 +81,7 @@ install an extra tool to reproduce the bytecode. The sources are the upstream on
 with the bodies replaced by `abort 0`, since the real logic lives in the Cetus
 package on chain.
 
-### 4. `object-lock/` — Epoch Object Lock
-Time-lock ANY `key + store` object (NFTs, caps, LP positions) until a date.
-- Cliff-only, zero admin, zero fees
-- Shared locks: public proof-of-lock, verifiable by anyone
-- Unlock date can only be extended, never shortened
-- No function ever hands out `&mut T`, so nothing can be pulled out of a locked
-  object
-
-Still live, still supported, and immutable, so the locks created with it keep
-working and stay verifiable. For liquidity, use `lp-lock/` above instead: it locks
-the same position and leaves the fees collectable, which this one cannot do,
-because a wrapped object cannot be called at all.
-
-| Version | Mainnet package | Notes |
-|---|---|---|
-| v1 (origin) | `0xe0f23402fae139961a3d5ffa99d054a7821b82295eb5988957053f0c9a4dd14d` | defines the types and events, never changes |
-| v2 (current) | `0x0267556b54173e71b4eefce7c2466770fa52842d0b4242dae49f023022636e89` | rejects a `@0x0` beneficiary |
-
-The UpgradeCap was destroyed on 29 Aug 2026
-(tx `3bFTDJwWpyPDKzKPRLhMQs65AXbwpHZJtRwpLrcw34tZ`): this package is immutable and
-can never be upgraded, by us or by anyone.
-
-Our own review of this package is in [object-lock/AUDIT.md](./object-lock/AUDIT.md),
-including the issues we found and fixed. Findings we listed as open are fair game
-for the bounty, as is anything we missed.
-
-### 5. `ept-gateway/` — Epoch EPT Gateway
+### 4. `ept-gateway/` — Epoch EPT Gateway
 Pay the vesting deploy fee in $EPT instead of SUI, at a discount.
 - The EPT is burned by the contract, in the same call, not by us afterwards
 - Not an upgrade of `vesting`: it calls the existing public entry points, so the
@@ -131,7 +104,6 @@ Each package ships its Move unit tests:
 cd vesting      && sui move test   # vesting suite
 cd walrus-names && sui move test   # 32 tests: names, marketplace, EPT, comp gate
 cd lp-lock      && sui move test   # 16 tests: lock, claim, extend, guards, aborts
-cd object-lock  && sui move test   # 11 tests: lock, claim, extend, aborts
 cd ept-gateway  && sui move test   # 13 tests: burn, float, cap, pause (needs ../vesting)
 ```
 
@@ -157,7 +129,7 @@ and how to report privately.
 
 [MIT](./LICENSE)
 
-### 6. `templates/` — Epoch Names template marketplace
+### 5. `templates/` — Epoch Names template marketplace
 Templates for `.epoch` sites sold as licenses, with a burn of EPT on every sale
 and reviews on chain.
 
@@ -165,7 +137,7 @@ and reviews on chain.
 |---|---|
 | Mainnet | `0x197da7e5ec45bdb03a3973e02f0a6f7cdb28dbee1f6864e4da2fafbc70ba8aa7` |
 
-### 7. `drops/` — Epoch Drops
+### 6. `drops/` — Epoch Drops
 Airdrops with vesting paid from a single vault: one vault, many claimants, each
 with their own schedule.
 
@@ -173,7 +145,7 @@ with their own schedule.
 |---|---|
 | Mainnet | `0xf1739bcbc89a6954e031b6a1ef31809800e1e76d4ec914311bfa9eefefa042c4` |
 
-### 8. `farm/` — Epoch Farm
+### 7. `farm/` — Epoch Farm
 LP incentives without custody: positions stay with their owners, rewards are paid
 from a vault against on chain proofs published by the farm worker.
 
@@ -181,7 +153,7 @@ from a vault against on chain proofs published by the farm worker.
 |---|---|
 | Mainnet | `0xe11651eb8a9255595e003db29098e7a2d10f0a123d60b031c66ed0c9bb5023c7` |
 
-### 9. `agent-pay/` — Epoch Agent Pay
+### 8. `agent-pay/` — Epoch Agent Pay
 Budgets for AI agents with limits enforced by the chain: an agent key can only
 `pay`, within a per-payment cap, a per-period cap, an allow-list of recipients
 and an expiry. The owner withdraws at any time. Services and x402 payments are
@@ -191,7 +163,7 @@ built on it.
 |---|---|
 | Mainnet | `0x2d97b3dcf248734bd8f536ea98bc22de71382c1b678f6a70680961b0353903ed` |
 
-### 10. `walrus-sponsor/` — Sponsored Walrus uploads
+### 9. `walrus-sponsor/` — Sponsored Walrus uploads
 The user owns the blob, Epoch pays the WAL: an on chain treasury that funds
 `register_blob` for sites and templates, with per-blob vouchers signed by the
 sponsor and settled in the same transaction.
@@ -200,7 +172,7 @@ sponsor and settled in the same transaction.
 |---|---|
 | Mainnet | `0x89139211aac66986da056559dcc3010703b22847e1559e8479eba716227db400` |
 
-### 11. `names-gateway/` — Partner tokens for `.epoch` names
+### 10. `names-gateway/` — Partner tokens for `.epoch` names
 Pay a `.epoch` name in a partner project's token at a discount. The gateway pays
 the registry in SUI from its own float and keeps the partner token; the only way
 the tokens leave is into an Epoch vesting vault locked for at least 12 months,

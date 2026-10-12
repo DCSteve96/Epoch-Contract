@@ -13,7 +13,6 @@ Rewards are paid in **$EPT** per accepted finding.
 - `lp-lock/` — anything that moves liquidity out of a locked Cetus position before
   its date, in any PTB composition; fees or rewards reaching anyone other than the
   beneficiary; the spend cap on `add_liquidity`; the guards on claim and extend
-- `object-lock/` — lock/claim/extend invariants, beneficiary checks
 - `ept-gateway/` — fee burn correctness, float accounting, coin-type check,
   anything that gets a vault created without the fee being paid and burned
 
@@ -73,7 +72,6 @@ and is stated the same way in the docs on epochsui.com.
 
 | Package | UpgradeCap | What that means |
 |---|---|---|
-| `object-lock` | **burned** (tx `3bFTDJwWpyPDKzKPRLhMQs65AXbwpHZJtRwpLrcw34tZ`) | immutable, no upgrade is possible by anyone |
 | `vesting` | live, `0xe8d105c0f1d8b2508cd0404c2094f29ae46b0dd3929390f102ddae8278764bc3`, policy 0 (compatible), held by the deployer | the deployer can publish a new version of the package; existing vaults keep their layout and would be callable by it |
 | `walrus-names` | live, `0x4f6b58209dabcbb6fda96367727edff2dc396a88ce4afbaf7f81957b4b68f263`, policy 0 (compatible), held by the deployer | same; in practice we have only ever shipped additive upgrades (v2, v3, v4) |
 | `ept-gateway` | live, `0xf379a9563a118edf90f9faa1786553c4c597b55aa42770fd6663592eceb17358`, policy 0 (compatible), held by the deployer | deliberate while the fee level settles; this package holds no user tokens, only its SUI float |
