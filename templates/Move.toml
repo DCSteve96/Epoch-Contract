@@ -1,0 +1,24 @@
+[package]
+name = "epoch_templates"
+edition = "2024.beta"
+
+# Sui e MoveStdlib NON vanno dichiarati: nel toolchain corrente sono dipendenze
+# di sistema, aggiunte automaticamente. Dichiararle esplicitamente disattiva
+# l'aggiunta automatica per questo package ma non per le sue dipendenze, ed è
+# esattamente così che il grafo finisce con due versioni di 0x1 e di 0x2.
+[dependencies]
+
+# Interfaccia Cetus, copia locale come in epoch-lp-lock (stesso commit, stessa
+# ragione: l'upstream risolve le sue dipendenze via Move Registry e servirebbe
+# il binario `mvr` per compilare, che è troppo da chiedere a un auditor).
+#
+# Serve **solo** a `swap_and_burn`, non alla vendita. È una scelta di progetto:
+# se la pool fa i capricci si ferma il burn, non il negozio.
+cetusclmm = { local = "./deps/cetus_clmm" }
+IntegerMate = { local = "./deps/integer_mate" }
+
+[addresses]
+epoch_templates = "0x0"
+
+# L'indirizzo di Cetus lo porta la dipendenza (deps/cetus_clmm/Move.toml),
+# insieme al suo published-at. ATTENZIONE: quei valori sono di mainnet.

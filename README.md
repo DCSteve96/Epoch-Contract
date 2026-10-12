@@ -13,7 +13,9 @@ for the **Epoch Bug Bounty** (see [SECURITY.md](./SECURITY.md)).
 Trustless, non-custodial token vesting vaults.
 - Cliff, linear and hybrid schedules
 - Single and multi-beneficiary vaults (up to 20 wallets, basis-point shares)
-- Immutable after deploy: no admin keys, no upgrade, no cancellation
+- Vaults cannot be cancelled or redirected once created: no admin override on a vault
+- The package itself is still upgradeable (live UpgradeCap, policy compatible): see the
+  upgrade status table in [SECURITY.md](./SECURITY.md#upgrade-status-of-each-package-read-this-before-reporting)
 
 | Network | Package |
 |---|---|
@@ -31,7 +33,8 @@ Trustless, non-custodial token vesting vaults.
 | v1 (origin) | `0x5dd1fb9f784129f0815c8e54ed917ad698401c0900ebeb1525f37fac98a94dda` | register, marketplace, NameCap type-origin |
 | v2 | `0x7a1773e18d571a173bedf17b5e7a01fe7cbb67431246cc6bdb7d997aa03dda90` | + `record_partner_launch` |
 | v3 | `0x737cd24ef7abbb1739279916fe88d9bf427ad68567baff74904829d8021f8408` | + 3-char comp gate |
-| v4 (current) | `0xc868bfcfc7aeee0fc3938b632fce15856882092554d1068ce4cdddbd7b23fcd8` | + pay-in-EPT |
+| v4 | `0xc868bfcfc7aeee0fc3938b632fce15856882092554d1068ce4cdddbd7b23fcd8` | + pay-in-EPT |
+| v5 (current) | `0x008673e8e3d3580db6335c86895b1fa9bbb428b4a0bd3d7cf8e06c6556cb7ab7` | current register target |
 
 Shared objects: Registry `0xa6d9e91daa40dbff259838c9f5bd6448d8f08e9b2a3da02c5d4d3c88ce5666d1`,
 Treasury `0xb3c54987a9f45aa194ebcbaee979fc8654c2deeb7e5824a61ce2faff41573436`.
@@ -153,3 +156,57 @@ and how to report privately.
 ## License
 
 [MIT](./LICENSE)
+
+### 6. `templates/` — Epoch Names template marketplace
+Templates for `.epoch` sites sold as licenses, with a burn of EPT on every sale
+and reviews on chain.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0x197da7e5ec45bdb03a3973e02f0a6f7cdb28dbee1f6864e4da2fafbc70ba8aa7` |
+
+### 7. `drops/` — Epoch Drops
+Airdrops with vesting paid from a single vault: one vault, many claimants, each
+with their own schedule.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0xf1739bcbc89a6954e031b6a1ef31809800e1e76d4ec914311bfa9eefefa042c4` |
+
+### 8. `farm/` — Epoch Farm
+LP incentives without custody: positions stay with their owners, rewards are paid
+from a vault against on chain proofs published by the farm worker.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0xe11651eb8a9255595e003db29098e7a2d10f0a123d60b031c66ed0c9bb5023c7` |
+
+### 9. `agent-pay/` — Epoch Agent Pay
+Budgets for AI agents with limits enforced by the chain: an agent key can only
+`pay`, within a per-payment cap, a per-period cap, an allow-list of recipients
+and an expiry. The owner withdraws at any time. Services and x402 payments are
+built on it.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0x2d97b3dcf248734bd8f536ea98bc22de71382c1b678f6a70680961b0353903ed` |
+
+### 10. `walrus-sponsor/` — Sponsored Walrus uploads
+The user owns the blob, Epoch pays the WAL: an on chain treasury that funds
+`register_blob` for sites and templates, with per-blob vouchers signed by the
+sponsor and settled in the same transaction.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0x89139211aac66986da056559dcc3010703b22847e1559e8479eba716227db400` |
+
+### 11. `names-gateway/` — Partner tokens for `.epoch` names
+Pay a `.epoch` name in a partner project's token at a discount. The gateway pays
+the registry in SUI from its own float and keeps the partner token; the only way
+the tokens leave is into an Epoch vesting vault locked for at least 12 months,
+enforced by the contract. Fees can be adjusted by a keeper within owner-set
+bounds, one step every 6 hours.
+
+| Network | Package |
+|---|---|
+| Mainnet | `0x7202fca25991c1042669901f5975f33867ffd4ab7a4ab6011b017be030f85abf` |

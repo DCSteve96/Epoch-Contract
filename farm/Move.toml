@@ -1,0 +1,18 @@
+[package]
+name = "epoch_farm"
+edition = "2024.beta"
+
+# Sui e MoveStdlib NON vanno dichiarati: nel toolchain corrente sono dipendenze
+# di sistema, aggiunte automaticamente. Dichiararle esplicitamente disattiva
+# l'aggiunta automatica per questo package ma non per le sue dipendenze, ed è
+# esattamente così che il grafo finisce con due versioni di 0x1 e di 0x2.
+[dependencies]
+
+# Nessuna dipendenza da Cetus, ed è il punto dell'architettura: questo modulo
+# non tocca le position, non legge la pool e non chiama niente di loro. Tiene
+# EPT e paga chi presenta una prova. Meno superficie, meno cose che possono
+# abortire il giorno in cui un package di terzi cambia sotto di noi (ci è già
+# successo con `pool::get_position_amounts` sulla v14).
+
+[addresses]
+epoch_farm = "0x0"

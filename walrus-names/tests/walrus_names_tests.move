@@ -600,4 +600,333 @@ module walrus_names::walrus_names_tests {
         };
         ts::end(sc);
     }
+
+    // -- v5: name → NameCap link ----------------------------------------------
+
+    // Registering publishes the link, and it points at the cap that was minted.
+    #[test]
+    fun register_publishes_cap_link() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            assert!(walrus_names::is_linked(&reg, string::utf8(b"alice")), 0);
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let reg = ts::take_shared<Registry>(&sc);
+            let cap = ts::take_from_sender<NameCap>(&sc);
+            let linked = walrus_names::cap_id_of(&reg, string::utf8(b"alice"));
+            assert!(option::is_some(&linked), 1);
+            assert!(*option::borrow(&linked) == object::id(&cap), 2);
+            ts::return_to_sender(&sc, cap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // A name nobody linked reads as absent, and link_cap can be called twice
+    // without changing the answer: it is meant to ride along in other PTBs.
+    #[test]
+    fun link_cap_is_idempotent_and_absent_reads_none() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let reg = ts::take_shared<Registry>(&sc);
+            assert!(!walrus_names::is_linked(&reg, string::utf8(b"ghost")), 0);
+            assert!(option::is_none(&walrus_names::cap_id_of(&reg, string::utf8(b"ghost"))), 1);
+            ts::return_shared(reg);
+        };
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let cap = ts::take_from_sender<NameCap>(&sc);
+            let before = walrus_names::cap_id_of(&reg, string::utf8(b"alice"));
+            walrus_names::link_cap(&mut reg, &cap);
+            walrus_names::link_cap(&mut reg, &cap);
+            let after = walrus_names::cap_id_of(&reg, string::utf8(b"alice"));
+            assert!(*option::borrow(&before) == *option::borrow(&after), 2);
+            assert!(*option::borrow(&after) == object::id(&cap), 3);
+            ts::return_to_sender(&sc, cap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // The admin backfill writes the pairs it is given. Nothing here proves the
+    // pair is right: that check belongs to whoever reads it, which is why the
+    // client re-reads the object and matches type and name.
+    #[test]
+    fun admin_link_writes_pairs() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+
+        // ALICE keeps the cap; the admin publishes the same pair from outside.
+        ts::next_tx(&mut sc, ALICE);
+        let real_id = {
+            let cap = ts::take_from_sender<NameCap>(&sc);
+            let id = object::id(&cap);
+            ts::return_to_sender(&sc, cap);
+            id
+        };
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let acap = ts::take_from_sender<AdminCap>(&sc);
+            let mut reg = ts::take_shared<Registry>(&sc);
+            // Put the name back in its pre-v5 state: record yes, link no. That is
+            // where the 313 existing names sit, and what the backfill must cover.
+            walrus_names::unlink_cap_for_testing(&mut reg, string::utf8(b"alice"));
+            assert!(!walrus_names::is_linked(&reg, string::utf8(b"alice")), 0);
+
+            walrus_names::admin_link(&acap, &mut reg,
+                vector[string::utf8(b"alice")], vector[real_id]);
+            assert!(*option::borrow(&walrus_names::cap_id_of(&reg, string::utf8(b"alice"))) == real_id, 1);
+            ts::return_to_sender(&sc, acap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // An assertion must not beat evidence: once a name is linked by whoever held
+    // the cap, the admin backfill leaves it alone. This is what keeps a stolen
+    // admin key from pointing every name at a bogus object.
+    #[test]
+    fun admin_link_never_overwrites_a_proved_link() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, ALICE);
+        let real_id = {
+            let cap = ts::take_from_sender<NameCap>(&sc);
+            let id = object::id(&cap);
+            ts::return_to_sender(&sc, cap);
+            id
+        };
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let acap = ts::take_from_sender<AdminCap>(&sc);
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let bogus = object::id(&reg);   // any object that is not that cap
+            walrus_names::admin_link(&acap, &mut reg,
+                vector[string::utf8(b"alice")], vector[bogus]);
+            assert!(*option::borrow(&walrus_names::cap_id_of(&reg, string::utf8(b"alice"))) == real_id, 0);
+            ts::return_to_sender(&sc, acap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // Uniqueness (one NameCap per name, forever) is what makes a wrong link
+    // harmless: if a name could be freed and taken again, two caps would carry
+    // the same `name` and the reader's check would pass on the stale one.
+    // This test pins it down (ENameTaken = 0).
+    #[test]
+    #[expected_failure(abort_code = 0)]
+    fun a_name_can_never_be_registered_twice() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, BOB);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"other"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::end(sc);
+    }
+
+    // Mismatched vectors abort instead of silently linking half the batch
+    // (ELengthMismatch = 17).
+    #[test]
+    #[expected_failure(abort_code = 17)]
+    fun admin_link_length_mismatch_aborts() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = mint(&mut sc, 1_000_000_000);
+            walrus_names::register(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let acap = ts::take_from_sender<AdminCap>(&sc);
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let dummy = object::id(&reg);   // any id: only the length matters here
+            walrus_names::admin_link(&acap, &mut reg,
+                vector[string::utf8(b"alice"), string::utf8(b"bob")], vector[dummy]);
+            ts::return_to_sender(&sc, acap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // A link to a name that does not exist is refused (ENameNotFound = 6).
+    #[test]
+    #[expected_failure(abort_code = 6)]
+    fun admin_link_unknown_name_aborts() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let acap = ts::take_from_sender<AdminCap>(&sc);
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let dummy = object::id(&reg);
+            walrus_names::admin_link(&acap, &mut reg,
+                vector[string::utf8(b"ghost")], vector[dummy]);
+            ts::return_to_sender(&sc, acap);
+            ts::return_shared(reg);
+        };
+        ts::end(sc);
+    }
+
+    // -- v5: permissionless burn of the EPT fees ------------------------------
+
+    // ALICE, who is not the admin, burns the fees the treasury collected in EPT.
+    #[test]
+    fun burn_ept_is_permissionless() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let cap = ts::take_from_sender<AdminCap>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::set_ept_config<EPT_MOCK>(&cap, &mut tre, 1000);
+            ts::return_to_sender(&sc, cap);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, ALICE);
+        {
+            let mut reg = ts::take_shared<Registry>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            let pay = coin::mint_for_testing<EPT_MOCK>(1000, ts::ctx(&mut sc));
+            walrus_names::register_with_ept<EPT_MOCK>(&mut reg, &mut tre,
+                string::utf8(b"alice"), string::utf8(b"blob"), pay, ts::ctx(&mut sc));
+            assert!(walrus_names::ept_balance<EPT_MOCK>(&tre) == 1000, 0);
+            ts::return_shared(reg);
+            ts::return_shared(tre);
+        };
+        // BOB, who holds nothing at all, can enforce the burn.
+        ts::next_tx(&mut sc, BOB);
+        {
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::burn_ept<EPT_MOCK>(&mut tre, ts::ctx(&mut sc));
+            assert!(walrus_names::ept_balance<EPT_MOCK>(&tre) == 0, 1);
+            ts::return_shared(tre);
+        };
+        ts::end(sc);
+    }
+
+    // Burning the wrong coin type is refused with a readable code instead of
+    // aborting inside the dynamic field borrow (EWrongEptCoin = 16).
+    #[test]
+    #[expected_failure(abort_code = 16)]
+    fun burn_ept_wrong_coin_aborts() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let cap = ts::take_from_sender<AdminCap>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::set_ept_config<EPT_MOCK>(&cap, &mut tre, 1000);
+            ts::return_to_sender(&sc, cap);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, BOB);
+        {
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::burn_ept<OTHER_COIN>(&mut tre, ts::ctx(&mut sc));
+            ts::return_shared(tre);
+        };
+        ts::end(sc);
+    }
+
+    // Nothing collected yet: abort rather than emit a burn of zero
+    // (ENothingToBurn = 18; the balance field does not exist until the first fee).
+    #[test]
+    #[expected_failure(abort_code = 18)]
+    fun burn_ept_without_balance_aborts() {
+        let mut sc = ts::begin(ADMIN);
+        init_protocol(&mut sc);
+
+        ts::next_tx(&mut sc, ADMIN);
+        {
+            let cap = ts::take_from_sender<AdminCap>(&sc);
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::set_ept_config<EPT_MOCK>(&cap, &mut tre, 1000);
+            ts::return_to_sender(&sc, cap);
+            ts::return_shared(tre);
+        };
+        ts::next_tx(&mut sc, BOB);
+        {
+            let mut tre = ts::take_shared<WalNamesTreasury>(&sc);
+            walrus_names::burn_ept<EPT_MOCK>(&mut tre, ts::ctx(&mut sc));
+            ts::return_shared(tre);
+        };
+        ts::end(sc);
+    }
 }

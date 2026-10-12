@@ -1,0 +1,13 @@
+[package]
+name = "epoch_names_gateway"
+edition = "2024.beta"
+
+[dependencies]
+# Il registro dei nomi, con il suo Published.toml: su mainnet si linka alla v5
+# (0x0086…7ab7) con l'indirizzo originale 0x5dd1…4dda, su testnet alla v2.
+walrus_names = { local = "../walrus-names" }
+# Il vesting: i token raccolti possono uscire da qui solo dentro un suo vault.
+vesting_service = { local = "../vesting" }
+
+[addresses]
+epoch_names_gateway = "0x0"

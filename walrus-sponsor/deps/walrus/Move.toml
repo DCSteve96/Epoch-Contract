@@ -1,0 +1,19 @@
+# Interfaccia minima di Walrus, presa da github.com/MystenLabs/walrus
+# (mainnet-contracts/walrus, commit 460c1fae3721ac73733d1af08e88019e296b4e04, 30 set 2026).
+#
+# Solo le due strutture che il contratto legge (`Blob`, `Storage`), con i campi
+# nell'ordine originale, e le funzioni di lettura che usa, con corpo `abort 0`:
+# la logica vera sta nel package on chain. Nessuna funzione che scrive: il
+# contratto sponsor NON chiama mai il sistema Walrus, così un aggiornamento di
+# Walrus (che controlla la versione del package in `System`) non lo rompe.
+# Le funzioni di lettura non controllano versioni e restano valide.
+[package]
+name = "walrus"
+edition = "2024"
+published-at = "0x98da433aa0139512c210597b1c5e3df6cd121d8d77f8652691bb66fadfc8aa1b"
+
+[dependencies]
+wal = { local = "../wal" }
+
+[addresses]
+walrus = "0xfdc88f7d7cf30afab2f82e8380d11ee8f70efb90e863d1de8616fae1bb09ea77"

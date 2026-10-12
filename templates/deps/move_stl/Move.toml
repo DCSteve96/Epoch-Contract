@@ -1,0 +1,14 @@
+# Copia locale di https://github.com/CetusProtocol/move-stl (sottocartella sui),
+# branch main (0681fec63a31…), lo stesso commit che Cetus pinna.
+# Indirizzi presi dalla linkage table on-chain di Cetus CLMM. Li riscrive
+# `lp_lock_testnet.sh net`.
+[package]
+name = "MoveSTL"
+version = "1.2.0"
+edition = "2024"
+published-at = "0x8569b7efebec65c73b9dc15c5ac2a9542870d286fa79a3feedffbaa94ed53002"
+
+[dependencies]
+
+[addresses]
+move_stl = "0xbe21a06129308e0495431d12286127897aff07a8ade3970495a4404d97f9eaaa"

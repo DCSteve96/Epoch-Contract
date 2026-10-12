@@ -1,0 +1,15 @@
+[package]
+name = "epoch_drops"
+edition = "2024.beta"
+
+# Sui e MoveStdlib NON vanno dichiarati: nel toolchain corrente sono dipendenze
+# di sistema, aggiunte automaticamente (stessa nota di epoch-farm).
+[dependencies]
+
+# Nessuna dipendenza dal package vesting, di proposito: un Drop non è un vault
+# e non deve ereditare l'upgrade cap di quello. La matematica della maturazione
+# è copiata riga per riga da `vesting::compute_vested_total`, e un test la
+# inchioda sugli stessi numeri.
+
+[addresses]
+epoch_drops = "0x0"

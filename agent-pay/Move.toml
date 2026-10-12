@@ -1,0 +1,10 @@
+[package]
+name = "epoch_agent_pay"
+edition = "2024.beta"
+
+# Sui e MoveStdlib sono dipendenze di sistema, aggiunte in automatico dal
+# toolchain (stessa nota di epoch-farm ed epoch-drops).
+[dependencies]
+
+[addresses]
+epoch_agent_pay = "0x0"

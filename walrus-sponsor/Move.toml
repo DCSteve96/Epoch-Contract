@@ -1,0 +1,12 @@
+[package]
+name = "epoch_walrus_sponsor"
+edition = "2024"
+
+# Sui e MoveStdlib non si dichiarano: sono dipendenze di sistema del toolchain.
+[dependencies]
+# Interfacce vendorizzate (vedi i loro Move.toml): solo tipi e funzioni di lettura.
+walrus = { local = "./deps/walrus" }
+wal = { local = "./deps/wal" }
+
+[addresses]
+epoch_walrus_sponsor = "0x0"
